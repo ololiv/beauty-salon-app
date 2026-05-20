@@ -4,7 +4,7 @@ import datetime
 import os
 import base64
 
-# 1. НАСТРОЙКА СТРАНИЦЫ И МАГИЧЕСКОГО ДИЗАЙНА
+#  блок дизайна страницы
 st.set_page_config(page_title="Пространство гармонии и красоты", layout="wide", page_icon="✨")
 
 def get_base64_background(image_path):
@@ -37,7 +37,7 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. БАЗА ДАННЫХ ПАРОЛЕЙ И СОТРУДНИКОВ
+# база данных и сотрудников (временная)
 STAFF_CREDENTIALS = {
  "Елена (Лазерная эстетика)": "Elena_Silk_777",
  "Ольга (Уход за лицом)": "Olga_Beauty_888",
@@ -49,7 +49,7 @@ STAFF_CREDENTIALS = {
 }
 ADMIN_PASSWORD = "Admin_Garmoniya_2026"
 
-# Прейскурант: "Услуга": [Цена, Маржа Директора, Прибыль Сотрудника]
+# Прейскурант, услуга: цена, маржа салона, прибыль Сотрудника
 PRICE_LIST = {
  "Лазерная эпиляция (Женская)": {
     "Лицо полностью": [3200, 1700, 1500],
@@ -113,15 +113,15 @@ if "appointments" not in st.session_state:
 if "sales" not in st.session_state:
  st.session_state.sales = pd.DataFrame(columns=["Дата", "Товар", "Категория", "Количество", "Закупка_Итого", "Выручка_Итого", "Прибыль"])
 
-# ИНИЦИАЛИЗАЦИЯ СЧЕТОВ И БАЛАНСОВ
+# баланс и счет
 if "director_balance" not in st.session_state:
     st.session_state.director_balance = 0.0
 if "employee_balances" not in st.session_state:
     st.session_state.employee_balances = {name: 0.0 for name in STAFF_CREDENTIALS.keys()}
 
-# 3. УПРАВЛЕНИЕ ДОСТУПОМ
+# управление доступом
 st.sidebar.markdown("### 🔑 Портал доступа")
-role = st.sidebar.selectbox("Выберите вашу роль:", ["Клиент", "Сотрудник (Мастер)", "Администратор / Директор"])
+role = st.sidebar.selectbox("Выберите Ваш статус:", ["Клиент", "Сотрудник", "Директор"])
 
 access_granted = False
 current_user_name = ""
@@ -135,7 +135,7 @@ elif role == "Сотрудник (Мастер)":
   access_granted = True
   current_user_name = selected_master
  elif password: st.sidebar.error("❌ Пароль неверный")
-elif role == "Администратор / Директор":
+elif role == "Директор":
  password = st.sidebar.text_input("Введите мастер-ключ администратора:", type="password")
  if password == ADMIN_PASSWORD: access_granted = True
  elif password: st.sidebar.error("❌ Доступ заблокирован")
@@ -145,13 +145,13 @@ if access_granted:
  st.caption("ИП Комарова М.В. | г. Санкт-Петербург, Европейский пр., д. 22 | Часы работы: 12:00 - 21:00 ежедневно")
 
  if role == "Клиент":
-  menu = st.sidebar.radio("Навигация:", ["О салоне & Наша команда", "Онлайн-запись на визит", "🛍️ Волшебная лавка (Витрина & Бронь)"])
+  menu = st.sidebar.radio("Навигация:", ["О салоне. Наша команда", "Онлайн-запись на визит", "🛍️ Волшебная лавка"])
  elif role == "Сотрудник (Мастер)":
   menu = st.sidebar.radio("Навигация:", [f"Моё расписание ({current_user_name})", "Продажа товаров на смене"])
  else:
   menu = st.sidebar.radio("Навигация:", ["О салоне & Наша команда", "Панель записей (Администратор)", "Продажа товаров на смене", "📊 Аналитика директора & Склад"])
 
- # ИНТЕРФЕЙС 1: О салоне
+ # О салоне (стартовая страница)
  if menu == "О салоне & Наша команда":
   st.header("🔮 О нашем пространстве")
   st.write("Место комплексного восстановления тела и души. Ждем вас ежедневно с 12:00 до 21:00.")
@@ -162,7 +162,7 @@ if access_granted:
     for item, values in items.items(): 
         st.write(f"🔹 **{item}** — {values[0]:,} ₽")
 
- # ИНТЕРФЕЙС 2: Запись на процедуры
+ # запись на процедуры. дизайн интерфейса
  elif menu in ["Онлайн-запись на визит", "Панель записей (Администратор)", "Расписание записей"]:
   st.header("📅 Запись на процедуры")
  
@@ -186,11 +186,11 @@ if access_granted:
      dir_margin = PRICE_LIST[cat][serv][1]
      emp_profit = PRICE_LIST[cat][serv][2]
      
-     # Создаем запись в журнале
+     # Создание записи в журнале
      new_app = pd.DataFrame([{"Дата": str(date), "Template": time_selection, "Время": time_selection, "Клиент": c_name, "Категория": cat, "Услуга": serv, "Мастер": mast, "Стоимость": price, "Статус": "Подтвержден", "Маржа_Директора": dir_margin, "Прибыль_Мастера": emp_profit}])
      st.session_state.appointments = pd.concat([st.session_state.appointments, new_app], ignore_index=True)
      
-     # Начисление на балансы в реальном времени
+     # НОбновление баланса в реальном времени
      st.session_state.director_balance += dir_margin
      st.session_state.employee_balances[mast] += emp_profit
      
@@ -203,23 +203,23 @@ if access_granted:
   else:
    st.dataframe(st.session_state.appointments, use_container_width=True, hide_index=True)
 
- # ИНТЕРФЕЙС ЛИЧНОГО КАБИНЕТА СОТРУДНИКА
+ #  проект кабинета сотрудника
  if role == "Сотрудник (Мастер)" and menu == f"Моё расписание ({current_user_name})":
      st.markdown("---")
      st.subheader("💳 Мой финансовый счет (Личный кабинет)")
      
-     # Выводим баланс только этого сотрудника
+     # баланс сотрудника
      my_balance = st.session_state.employee_balances.get(current_user_name, 0.0)
      st.metric(label="Ваша чистая прибыль за текущую смену", value=f"{my_balance:,.2f} ₽")
      st.caption("Данные обновляются автоматически после проведения каждой записи или процедуры на ваше имя.")
 
- # ИНТЕРФЕЙС 3: Витрина
+ # витрина эзотерических товаов 
  elif menu == "🛍️ Волшебная лавка (Витрина & Бронь)":
   st.header("🔮 Витрина артефактов и товаров")
   display_df = st.session_state.products_db[["Товар", "Категория", "Розничная", "Остаток", "Забронировано", "Описание"]].copy()
   st.dataframe(display_df, use_container_width=True, hide_index=True)
 
- # ИНТЕРФЕЙС 4: Касса лавки
+ # касса магазина
  elif menu == "Продажа товаров на смене":
   st.header("💵 Кассовый модуль лавки")
   with st.form("cash_sale_form"):
@@ -238,20 +238,20 @@ if access_granted:
      new_sale = pd.DataFrame([{"Дата": str(datetime.date.today()), "Товар": selected_p, "Категория": st.session_state.products_db.loc[idx, "Категория"].values[0], "Количество": qty_sell, "Закупка_Итого": z_p * qty_sell, "Выручка_Итого": r_p * qty_sell, "Прибыль": profit_shop}])
      st.session_state.sales = pd.concat([st.session_state.sales, new_sale], ignore_index=True)
      
-     # Прибыль с товаров полностью идет на счет директора
+     # Прибыль с товаров полностью идет на счет директора!! 
      st.session_state.director_balance += float(profit_shop)
      st.success("💰 Продажа совершена! Чистая прибыль лавки переведена на счет директора.")
   st.dataframe(st.session_state.sales, use_container_width=True)
 
- # ИНТЕРФЕЙС 5: Аналитика директора (Личный кабинет)
+ # Аналитика директора
  elif menu == "📊 Аналитика директора & Склад":
   st.header("📊 Управленческий учет и Главный счет")
  
-  # Крупный дашборд счетов
+  # Дашборд счетов
   st.subheader("🏦 Состояние счетов в реальном времени")
   col_d1, col_d2 = st.columns(2)
   with col_d1:
-      # Сюда стекается маржа с услуг + прибыль от товаров лавки
+      # маржа с услуг + прибыль от товаров 
       st.metric("ГЛАВНЫЙ СЧЕТ ДИРЕКТОРА (Накопленная маржа)", f"{st.session_state.director_balance:,.2f} ₽")
   with col_d2:
       total_emp_payout = sum(st.session_state.employee_balances.values())
@@ -282,6 +282,6 @@ if access_granted:
   dm1.metric("Фактическая маржа на счете", f"{st.session_state.director_balance:,.2f} ₽")
   dm2.metric("Расчетная чистая прибыль салона (Маржа минус расходы)", f"{calculated_net_profit:,.2f} ₽")
 
-  st.markdown("---")
+  st.markdown("   ")
   st.subheader("📦 Складской отчет:")
   st.dataframe(st.session_state.products_db, use_container_width=True, hide_index=True)
